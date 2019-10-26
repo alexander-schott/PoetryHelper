@@ -8,6 +8,9 @@ sample = nltk.corpus.gutenberg.raw('whitman-leaves.txt')
 original_text = []
 
 
+f = open("input.txt", "r+")
+contents = f.read()
+print(contents)
 
 
 class PoetFiller:
@@ -25,8 +28,7 @@ class PoetFiller:
     def fill_poem(self,text):
         gaps = self.find_gaps(text)
         gaps, rhyme_model = self.missing_rhymes(gaps)
-        print(gaps, rhyme_model)
-        gaps = self.fill_rhymes(gaps)
+        gaps = self.fill_rhymes(gaps, rhyme_model)
         gaps = self.fill_gaps(gaps)
         filled = [line + '\n' for line in gaps]
         return filled
@@ -35,6 +37,11 @@ class PoetFiller:
     def find_gaps(self, text):
         #split into lines
         lines = re.split(r"( *|\/)*\n", text)
+        for line in lines:
+            if line == '':
+                lines.remove('')
+
+        print(lines)
         #split where there is missing information
         gaps = []
         for line in lines:
@@ -89,27 +96,35 @@ class PoetFiller:
     #lines is a 2d array of lines and phrases
     def missing_rhymes(self, lines):
         #for each rhyme type ending (#syllables for longest line of type, that lines line number, the rhyme)
-        rhyme_model = [[0, -1, ""] for i in range(len(self.rhyme_scheme))]
+        #rhyme_model = [[0, -1] for i in range(len(self.rhyme_scheme))]
+        rhyme_model = {}
+        for c in self.rhyme_scheme:
+            rhyme_model[c] = [0, -1]
+
         for i in range(len(lines)):
             if lines[-1][-1] != "...":
                 # l corresponds to line of given stanza in rhyme scheme
                 stanza_line = i % len(self.rhyme_scheme)
+                rhyme_type = self.rhyme_scheme[stanza_line]
                 syllables = self.count_syllables(lines[i])
-                if syllables >= rhyme_model[stanza_line][0]:
-                    rhyme = self.get_rhyme(lines[i])
-                    rhyme_model[stanza_line][0] = syllables
-                    rhyme_model[stanza_line][1] = i
+                if syllables >= rhyme_model[rhyme_type][0]:
+                    #rhyme = self.get_rhyme(lines[i])
+                    rhyme_model[rhyme_type][0] = syllables
+                    rhyme_model[rhyme_type][1] = i
                     #rhyme_model[stanza_line][2] = rhyme
 
         for i in range(len(lines)):
             if lines[i][-1] != "...":
                 stanza_line = i % len(self.rhyme_scheme)
-                if rhyme_model[stanza_line][1] != i:
+                rhyme_type = self.rhyme_scheme[i]
+                if rhyme_model[rhyme_type][1] != i:
                     line1 = lines[i]
-                    line2 = lines[rhyme_model[stanza_line][1]]
+                    line2 = lines[rhyme_model[rhyme_type][1]]
                     if not self.does_rhyme(line1, line2):
                         lines[i].append("...")
         return lines, rhyme_model
+
+
 
     def get_rhyme(self, line):
         tokens = nltk.word_tokenize(line[-1])
@@ -126,6 +141,8 @@ class PoetFiller:
         rhyme1 = self.get_rhyme(line1)
         rhyme2 = self.get_rhyme(line2)
         similarity = 0
+        if rhyme1 == None or rhyme2 == None:
+            return False
         for i in range(min(len(rhyme1), len(rhyme2))):
             if rhyme1[len(rhyme1) - 1 - i] != rhyme2[len(rhyme2) - 1 - i]:
                 return similarity
@@ -135,7 +152,19 @@ class PoetFiller:
 
 
     # lines is a 2d array of lines and phrases
-    def fill_rhymes(self, lines):
+    def fill_rhymes(self, lines, rhyme_model):
+        for i in range(len(lines)):
+            stanza_line = i % len(self.rhyme_scheme)
+            rhyme_type = self.rhyme_scheme[stanza_line]
+            if lines[i][-1] == "...":
+                archetype_line = rhyme_model[rhyme_type][1]
+                possible = self.predictor.gen10_forward()
+                for p in possible:
+                    if self.does_rhyme(lines[i], lines[archetype_line]):
+                        lines[i].pop()
+                        lines[i].append[p]
+                        break
+                    lines[i].append('_notfound_')
         return lines
 
 
@@ -144,7 +173,10 @@ class PoetFiller:
 
 
 
-test = "this is a sentence \n and this is a dog \n this is \n and this is..."
+
+
+
+test = contents
 
 filler = PoetFiller()
 print(filler.fill_poem(test))
