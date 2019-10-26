@@ -53,14 +53,4 @@ class BidirectionalPredictor:
         return result
 
 
-    
 
-
-test = ["This is a test sentence.", "This too is a test sentence."]
-leaves = nltk.corpus.gutenberg.raw('whitman-leaves.txt')
-predictor = BidirectionalPredictor()
-predictor.fit(leaves)
-print(predictor.generate_forward("does the length even matter"))
-print(predictor.generate_forward(n=10))
-print("##########################")
-print(predictor.generate_backward(n=10))
