@@ -1,7 +1,10 @@
 import SyllabicStress
+import NgramPredictor
 import nltk
 import re
 
+
+sample = leaves = nltk.corpus.gutenberg.raw('whitman-leaves.txt')
 
 original_text = []
 
@@ -15,6 +18,9 @@ class PoetFiller:
         self.syllables_per_line = syllables_per_line
         self.rhyme_scheme = rhyme_scheme
         self.meter = meter
+
+        self.predictor = NgramPredictor.BidirectionalPredictor()
+        self.predictor.fit(sample)
 
 
     #returns 2d array of lines and the lines split on missing information
@@ -47,6 +53,8 @@ class PoetFiller:
         return syllables
 
     def bridge_gap(self, phrase1, phrase2, syllables):
+        #TODO
+
         return phrase1 + phrase2
 
 
