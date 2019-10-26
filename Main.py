@@ -4,7 +4,7 @@ import nltk
 import re
 
 
-sample = leaves = nltk.corpus.gutenberg.raw('whitman-leaves.txt')
+sample = nltk.corpus.gutenberg.raw('whitman-leaves.txt')
 
 original_text = []
 
@@ -53,7 +53,14 @@ class PoetFiller:
         return syllables
 
     def bridge_gap(self, phrase1, phrase2, syllables):
-        #TODO
+        while syllables > 0:
+            new_word = self.predictor.generate_forward(phrase1)
+            phrase1 = phrase1 + new_word
+            syllables = syllables - self.count_syllables(new_word)
+            if syllables > 0:
+                new_word = self.predictor.generate_forward(phrase2)
+                phrase2 = new_word + phrase2
+                syllables = syllables - self.count_syllables(new_word)
 
         return phrase1 + phrase2
 
@@ -62,3 +69,4 @@ test = "this is a sentence"
 
 filler = PoetFiller()
 print(filler.count_syllables(test))
+print(filler.bridge_gap("Fill me up", "buttercup", 10))

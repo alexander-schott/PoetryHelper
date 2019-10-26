@@ -40,17 +40,18 @@ class BidirectionalPredictor:
     def generate_backward(self, word=None, n=1):
         return self.backward_model.generate(text_seed=word, num_words=n)
 
-    def gen10_forward(self):
+    def gen10_forward(self, word=None, n=1):
         result = []
         for i in range(10):
-            result.append(self.forward_model.generate())
+            result.append(self.generate_forward(word, n))
         return result
     
-    def gen10_backward(self):
+    def gen10_backward(self, word=None, n=1):
         result = []
         for i in range(10):
-            result.append(self.backward_model.generate())
+            result.append(self.generate_backward(word, n))
         return result
+
 
     
 
@@ -59,6 +60,7 @@ test = ["This is a test sentence.", "This too is a test sentence."]
 leaves = nltk.corpus.gutenberg.raw('whitman-leaves.txt')
 predictor = BidirectionalPredictor()
 predictor.fit(leaves)
+print(predictor.generate_forward("does the length even matter"))
 print(predictor.generate_forward(n=10))
 print("##########################")
 print(predictor.generate_backward(n=10))
