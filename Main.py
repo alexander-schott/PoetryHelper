@@ -24,7 +24,8 @@ class PoetFiller:
 
     def fill_poem(self,text):
         gaps = self.find_gaps(text)
-        gaps = self.missing_rhymes(gaps)
+        gaps, rhyme_model = self.missing_rhymes(gaps)
+        print(gaps, rhyme_model)
         gaps = self.fill_rhymes(gaps)
         gaps = self.fill_gaps(gaps)
         filled = [line + '\n' for line in gaps]
@@ -37,22 +38,32 @@ class PoetFiller:
         #split where there is missing information
         gaps = []
         for line in lines:
-            finshes = True
+            finishes = True
             if re.match(r" *\.\.\.\.* *$", line):
                 finishes = False
             gaps.append([x for x in re.split(r" *\.\.\.\.* *", line)])
-            gaps[-1].append(["..."])
+            if not finishes:
+                gaps[-1].append("...")
         return gaps
 
-    def fill_gaps(self, text):
-        lines = self.find_gaps(text)
+    def fill_gaps(self, lines):
+        filled = []
         for line in lines:
             # TODO: if last entry doesn't fit rhyme scheme fix here and append to line
             # also see if necessary to prepend ever
             # assume evenly distribute remaining syllables over sentence. Maybe this could be random?
+            if len(line) == 0:
+                #if line is totally blank
+                line = [self.predictor.generate_forward() for i in range(2)]
+            if len(line) < 2:
+                #if there is no gap to be filled
+                continue
             num_syllables = (self.syllables_per_line - self.count_syllables(line)) / (len(line) - 1)
+            result = ""
             for i in range(len(line) - 1):
-                self.bridge_gap(line[i], line[i+1], num_syllables)
+                result += self.bridge_gap(line[i], line[i+1], num_syllables)
+            filled.append(result)
+        return filled
 
     def count_syllables(self, line):
         #line is a list of phrases where there are assumed to be missing words between entries
@@ -66,11 +77,11 @@ class PoetFiller:
     def bridge_gap(self, phrase1, phrase2, syllables):
         while syllables > 0:
             new_word = self.predictor.generate_forward(phrase1)
-            phrase1 = phrase1 + new_word
+            phrase1 = phrase1 + " " + new_word
             syllables = syllables - self.count_syllables(new_word)
             if syllables > 0:
                 new_word = self.predictor.generate_forward(phrase2)
-                phrase2 = new_word + phrase2
+                phrase2 = new_word + " " + phrase2
                 syllables = syllables - self.count_syllables(new_word)
 
         return phrase1 + phrase2
@@ -78,7 +89,7 @@ class PoetFiller:
     #lines is a 2d array of lines and phrases
     def missing_rhymes(self, lines):
         #for each rhyme type ending (#syllables for longest line of type, that lines line number, the rhyme)
-        rhyme_model = [(0, -1, "") for i in range(len(self.rhyme_scheme))]
+        rhyme_model = [[0, -1, ""] for i in range(len(self.rhyme_scheme))]
         for i in range(len(lines)):
             if lines[-1][-1] != "...":
                 # l corresponds to line of given stanza in rhyme scheme
@@ -101,8 +112,11 @@ class PoetFiller:
         return lines, rhyme_model
 
     def get_rhyme(self, line):
-        last_word = SyllabicStress.rhyme_of_word(nltk.word_tokenize(line[-1])[-1])
-        return last_word
+        tokens = nltk.word_tokenize(line[-1])
+        if len(tokens) == 0:
+            return ""
+        last_word = tokens[-1]
+        return SyllabicStress.rhyme_of_word(last_word)
 
     def does_rhyme(self, line1, line2):
         similarity = self.rhyme_similarity(line1, line2)
@@ -122,14 +136,15 @@ class PoetFiller:
 
     # lines is a 2d array of lines and phrases
     def fill_rhymes(self, lines):
-        pass
+        return lines
 
 
 
-test = "this is a sentence"
+
+
+
+
+test = "this is a sentence \n and this is a dog \n this is \n and this is..."
 
 filler = PoetFiller()
-print(filler.get_rhyme("hello"))
-print(filler.get_rhyme("please"))
-print(filler.get_rhyme("rhyme"))
-print(filler.get_rhyme("and"))
+print(filler.fill_poem(test))
